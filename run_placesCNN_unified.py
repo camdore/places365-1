@@ -170,14 +170,22 @@ else:
 
 # output the prediction of scene category
 print('--SCENE CATEGORIES:')
-for i in range(0, 5):
+# for i in range(0, 5):
+for i in range (10):
     print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
 
 # output the scene attributes
 responses_attribute = W_attribute.dot(features_blobs[1])
+# print("len : W_attribute : ",len(W_attribute))
+# print("W_attribute : ",W_attribute)
+# print("len : response_attribute : ",len(responses_attribute))
+# print("response_attribute : ",responses_attribute)
 idx_a = np.argsort(responses_attribute)
+print("len idx_a : ",len(idx_a))
+print("idx_a : ",idx_a)
 print('--SCENE ATTRIBUTES:')
-print(', '.join([labels_attribute[idx_a[i]] for i in range(-1,-10,-1)]))
+# print(', '.join([labels_attribute[idx_a[i]],np.sort(responses_attribute) for i in range(-1,-10,-1)]))
+print(', '.join([f'{labels_attribute[idx_a[i]]}: {np.sort(responses_attribute)[i]}' for i in range(-1,-10,-1)]))
 
 
 # generate class activation mapping
