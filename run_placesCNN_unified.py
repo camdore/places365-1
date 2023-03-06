@@ -151,9 +151,11 @@ img_url = 'http://places.csail.mit.edu/demo/6.jpg'
 os.system('wget %s -q -O test.jpg' % img_url)
 img = Image.open('test.jpg')
 input_img = V(tf(img).unsqueeze(0))
-
+print(np.shape(input_img))
+print(type(input_img))
 # forward pass
 logit = model.forward(input_img)
+print(np.shape(logit))
 h_x = F.softmax(logit, 1).data.squeeze()
 probs, idx = h_x.sort(0, True)
 probs = probs.numpy()
@@ -174,27 +176,58 @@ print('--SCENE CATEGORIES:')
 for i in range (10):
     print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
 
+
+# create a dictionary of scene categories and their probabilities
+scene_categories = {classes[idx[i]]: probs[i] for i in range(len(idx))}
+
+# print the dictionary
+# print(scene_categories)
+
+
 # output the scene attributes
 responses_attribute = W_attribute.dot(features_blobs[1])
-# print("len : W_attribute : ",len(W_attribute))
-# print("W_attribute : ",W_attribute)
-# print("len : response_attribute : ",len(responses_attribute))
-# print("response_attribute : ",responses_attribute)
+# print(np.shape(responses_attribute))
+responses_attribute = torch.from_numpy(responses_attribute)
+responses_attribute = F.softmax(responses_attribute,0)
+responses_attribute = responses_attribute.numpy()
+# print(np.sort(responses_attribute))
+# print(np.sum(responses_attribute))
 idx_a = np.argsort(responses_attribute)
-print("len idx_a : ",len(idx_a))
-print("idx_a : ",idx_a)
 print('--SCENE ATTRIBUTES:')
 # print(', '.join([labels_attribute[idx_a[i]],np.sort(responses_attribute) for i in range(-1,-10,-1)]))
 print(', '.join([f'{labels_attribute[idx_a[i]]}: {np.sort(responses_attribute)[i]}' for i in range(-1,-10,-1)]))
 
 
-# generate class activation mapping
-print('Class activation map is saved as cam.jpg')
-CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
+# create a dictionary of scene attributes and their probabilities
+scene_attributes = {labels_attribute[idx_a[i]]: np.sort(responses_attribute)[i] for i in range(-1, -len(idx_a), -1)}
 
+# print the dictionary
+# print(scene_attributes)
+
+
+
+
+# print(features_blobs[1])
+# generate class activation mapping categories
+print('Class activation map is saved as cam.jpg')
+# print(idx)
+CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
+print(len(idx))
 # render the CAM and output
 img = cv2.imread('test.jpg')
 height, width, _ = img.shape
 heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
 result = heatmap * 0.4 + img * 0.5
 cv2.imwrite('cam.jpg', result)
+
+# generate class activation mapping Attributes
+print('Class activation map is saved as cam2.jpg')
+# VERIFIER features blobs
+CAMs = returnCAM(features_blobs[0], weight_softmax, [idx_a[0]])
+
+# render the CAM and output
+img = cv2.imread('test.jpg')
+height, width, _ = img.shape
+heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
+result = heatmap * 0.4 + img * 0.5
+cv2.imwrite('cam2.jpg', result)
