@@ -149,67 +149,93 @@ weight_softmax[weight_softmax<0] = 0
 # BATCH
 
 folder_path = 'img'
-image_dataset = datasets.ImageFolder(root=folder_path)
+image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
+
+# Définir la taille du batch
+batch_size = 4
+
+# Créer un DataLoader pour charger les images en tant que batchs
+image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size, shuffle=True)
+
+# forward pass sur chaque batch d'images
+for batch_idx, (data, target) in enumerate(image_loader):
+    # CHARGEMENT DE L'IMAGE
+    input_img = data
+    print("shape de l'input_img :", np.shape(input_img))
+    
+    # forward pass sur le batch d'images
+    logit = model.forward(input_img)
+    print(logit)
+    h_x = F.softmax(logit, 1).data.squeeze()
+    probs, idx = h_x.sort(0, True)
+    probs = probs.numpy()
+    idx = idx.numpy()
+    
+    # affichage des résultats pour le batch en cours
+    print(f"Batch {batch_idx} traité. Nombre d'images dans le batch : {len(data)}. Résultats :")
+    # for i in range(len(data)):
+        # print(f"Classe {idx[i]} avec probabilité {probs[i]}")
+        # print(np.sum(probs[i]))
+
 
 
 # CHARGEMENT DE L'IMAGE
-img_url = 'http://places.csail.mit.edu/demo/6.jpg'
-os.system('wget %s -q -O test.jpg' % img_url)
-img = Image.open('test.jpg')
-input_img = V(tf(img).unsqueeze(0))
-print("taille de l'input_img :", type(input_img))
-print("taille de l'img :", np.shape(img))
+# img_url = 'http://places.csail.mit.edu/demo/6.jpg'
+# os.system('wget %s -q -O test.jpg' % img_url)
+# img = Image.open('test.jpg')
+# input_img = V(tf(img).unsqueeze(0))
+# print("taille de l'input_img :", type(input_img))
 
 # forward pass
-logit = model.forward(input_img)
-h_x = F.softmax(logit, 1).data.squeeze()
-probs, idx = h_x.sort(0, True)
-probs = probs.numpy()
-idx = idx.numpy()
+# logit = model.forward(input_img)
+# h_x = F.softmax(logit, 1).data.squeeze()
+# probs, idx = h_x.sort(0, True)
+# probs = probs.numpy()
+# idx = idx.numpy()
 
 
 ########### OUTPUT ###########
 
 
-print('RESULT ON ' + img_url)
+# print('RESULT ON ' + img_url)
 
-# output the IO prediction
-io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
-if io_image < 0.5:
-    print('\n --TYPE OF ENVIRONMENT: indoor')
-else:
-    print('\n--TYPE OF ENVIRONMENT: outdoor')
-
-
-########### SCENE CATEGORIES ###########
+# # output the IO prediction
+# io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+# if io_image < 0.5:
+#     print('\n --TYPE OF ENVIRONMENT: indoor')
+# else:
+#     print('\n--TYPE OF ENVIRONMENT: outdoor')
 
 
-# output the prediction of scene category
-print('\n--SCENE CATEGORIES:')
-for i in range (10):
-    print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
-
-# create a dictionary of scene categories and their probabilities
-scene_categories = {classes[idx[i]]: probs[i] for i in range(len(idx))}
+# ########### SCENE CATEGORIES ###########
 
 
-########### SCENE ATTRIBUTES ###########
+# # output the prediction of scene category
+# print('\n--SCENE CATEGORIES:')
+# for i in range (10):
+#     print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
+
+# # create a dictionary of scene categories and their probabilities
+# scene_categories = {classes[idx[i]]: probs[i] for i in range(len(idx))}
 
 
-# Variables permettant d'obtenir les probabilités des attributs
-responses_attribute = W_attribute.dot(features_blobs[1])
-responses_attribute = torch.from_numpy(responses_attribute)
-responses_attribute = F.softmax(responses_attribute,0)
-responses_attribute = responses_attribute.numpy()
-idx_a = np.argsort(responses_attribute)
-
-print('\n--SCENE ATTRIBUTES:')
-
-print(', '.join([f'{labels_attribute[idx_a[i]]}: {np.sort(responses_attribute)[i]}' for i in range(-1,-10,-1)]))
+# ########### SCENE ATTRIBUTES ###########
 
 
-# create a dictionary of scene attributes and their probabilities
-scene_attributes = {labels_attribute[idx_a[i]]: np.sort(responses_attribute)[i] for i in range(-1, -len(idx_a), -1)}
+# # Variables permettant d'obtenir les probabilités des attributs
+# responses_attribute = W_attribute.dot(features_blobs[1])
+# responses_attribute = torch.from_numpy(responses_attribute)
+# responses_attribute = F.softmax(responses_attribute,0)
+# responses_attribute = responses_attribute.numpy()
+# idx_a = np.argsort(responses_attribute)
+
+# print('\n--SCENE ATTRIBUTES:')
+
+# print(', '.join([f'{labels_attribute[idx_a[i]]}: {np.sort(responses_attribute)[i]}' for i in range(-1,-10,-1)]))
+
+
+# # create a dictionary of scene attributes and their probabilities
+# scene_attributes = {labels_attribute[idx_a[i]]: np.sort(responses_attribute)[i] for i in range(-1, -len(idx_a), -1)}
 
 
 ########### HEATMAP ###########
