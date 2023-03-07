@@ -11,6 +11,7 @@ import os
 import numpy as np
 import cv2
 from PIL import Image
+from torchvision import datasets
 
 
  # hacky way to deal with the Pytorch 1.0 update
@@ -145,12 +146,18 @@ params = list(model.parameters())
 weight_softmax = params[-2].data.numpy()
 weight_softmax[weight_softmax<0] = 0
 
+# BATCH
+
+folder_path = 'img'
+image_dataset = datasets.ImageFolder(root=folder_path)
+
+
 # CHARGEMENT DE L'IMAGE
 img_url = 'http://places.csail.mit.edu/demo/6.jpg'
 os.system('wget %s -q -O test.jpg' % img_url)
 img = Image.open('test.jpg')
 input_img = V(tf(img).unsqueeze(0))
-print("taille de l'input_img :", np.shape(input_img))
+print("taille de l'input_img :", type(input_img))
 print("taille de l'img :", np.shape(img))
 
 # forward pass
