@@ -151,11 +151,14 @@ img_url = 'http://places.csail.mit.edu/demo/6.jpg'
 os.system('wget %s -q -O test.jpg' % img_url)
 img = Image.open('test.jpg')
 input_img = V(tf(img).unsqueeze(0))
-print(np.shape(input_img))
+print(type(tf(img).unsqueeze(0)))
+
+print("shape input_img : ",np.shape(input_img))
 print(type(input_img))
 # forward pass
 logit = model.forward(input_img)
 print(np.shape(logit))
+print(type(logit))
 h_x = F.softmax(logit, 1).data.squeeze()
 probs, idx = h_x.sort(0, True)
 probs = probs.numpy()
@@ -209,25 +212,25 @@ scene_attributes = {labels_attribute[idx_a[i]]: np.sort(responses_attribute)[i] 
 
 # print(features_blobs[1])
 # generate class activation mapping categories
-print('Class activation map is saved as cam.jpg')
-# print(idx)
-CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
-print(len(idx))
-# render the CAM and output
-img = cv2.imread('test.jpg')
-height, width, _ = img.shape
-heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-result = heatmap * 0.4 + img * 0.5
-cv2.imwrite('cam.jpg', result)
+# print('Class activation map is saved as cam.jpg')
+# # print(idx)
+# CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
+# print(len(idx))
+# # render the CAM and output
+# img = cv2.imread('test.jpg')
+# height, width, _ = img.shape
+# heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
+# result = heatmap * 0.4 + img * 0.5
+# cv2.imwrite('cam.jpg', result)
 
-# generate class activation mapping Attributes
-print('Class activation map is saved as cam2.jpg')
-# VERIFIER features blobs
-CAMs = returnCAM(features_blobs[0], weight_softmax, [idx_a[0]])
+# # generate class activation mapping Attributes
+# print('Class activation map is saved as cam2.jpg')
+# # VERIFIER features blobs
+# CAMs = returnCAM(features_blobs[0], weight_softmax, [idx_a[0]])
 
-# render the CAM and output
-img = cv2.imread('test.jpg')
-height, width, _ = img.shape
-heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-result = heatmap * 0.4 + img * 0.5
-cv2.imwrite('cam2.jpg', result)
+# # render the CAM and output
+# img = cv2.imread('test.jpg')
+# height, width, _ = img.shape
+# heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
+# result = heatmap * 0.4 + img * 0.5
+# cv2.imwrite('cam2.jpg', result)
