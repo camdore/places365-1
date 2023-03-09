@@ -150,8 +150,6 @@ weight_softmax[weight_softmax<0] = 0
 # os.system('wget %s -q -O test.jpg' % img_url)
 img = Image.open('frame_1.0.jpg')
 input_img = V(tf(img).unsqueeze(0))
-print("taille de l'img :", np.shape(img))
-print("taille de l'input_img :", np.shape(input_img))
 
 # forward pass
 logit = model.forward(input_img)

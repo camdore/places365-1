@@ -155,7 +155,7 @@ image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
 batch_size = 4
 
 # Créer un DataLoader pour charger les images en tant que batchs
-image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size, shuffle=True)
+image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
 
 # forward pass sur chaque batch d'images
 for batch_idx, (data, target) in enumerate(image_loader):
@@ -165,7 +165,7 @@ for batch_idx, (data, target) in enumerate(image_loader):
     
     # forward pass sur le batch d'images
     logit = model.forward(input_img)
-    print(logit)
+    print("logit :", logit)
     h_x = F.softmax(logit, 1).data.squeeze()
     probs, idx = h_x.sort(0, True)
     probs = probs.numpy()
