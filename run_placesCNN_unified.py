@@ -154,10 +154,14 @@ print(np.shape(input_img))
 print(type(input_img))
 # forward pass
 logit = model.forward(input_img)
+print("sdvsfdsdv")
+
 print(np.shape(logit))
 h_x = F.softmax(logit, 1).data.squeeze()
 probs, idx = h_x.sort(0, True)
 probs = probs.numpy()
+print(probs)
+print(idx)
 idx = idx.numpy()
 
 ########### OUTPUT ###########

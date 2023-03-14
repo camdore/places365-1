@@ -214,10 +214,16 @@ for batch_idx, (data, target) in enumerate(image_loader):
     input_img = data
     
     # forward pass sur le batch d'images
+    # print(input_img.size())
     logit = model.forward(input_img)
+    # print("efbesbqeb")
+    # print(logit.size())
     h_x = F.softmax(logit, 1).data.squeeze()
-    probs, idx = h_x.sort(0, True)
+    probs, idx = h_x.sort(1, True)
     probs = probs.numpy()
+    # print(probs[0])
+    # print(idx[0])
+
     idx = idx.numpy()
     
     # affichage des résultats pour le batch en cours
@@ -227,26 +233,28 @@ for batch_idx, (data, target) in enumerate(image_loader):
     # ########## OUTPUT ###########
 
 
-    # print('RESULT ON BATCH ' , batch_idx)
+    print('RESULT ON BATCH ' , batch_idx)
 
-    # # output the IO prediction
-    # io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
-    # if io_image < 0.5:
-    #     print('\n --TYPE OF ENVIRONMENT: indoor')
-    # else:
-    #     print('\n--TYPE OF ENVIRONMENT: outdoor')
+    # output the IO prediction
+    io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+    if io_image < 0.5:
+        print('\n --TYPE OF ENVIRONMENT: indoor')
+    else:
+        print('\n--TYPE OF ENVIRONMENT: outdoor')
 
 
     # ########### SCENE CATEGORIES ###########
 
 
-    # # output the prediction of scene category
-    # print('\n--SCENE CATEGORIES:')
-    # for i in range (10):
-    #     print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
+    # output the prediction of scene category
+    print('\n--SCENE CATEGORIES:')
+    print(idx.shape)
+    print(probs[0])
+    for i in range (10):
+        print('{:.3f} -> {}'.format(probs[0,i], classes[idx[0,i]]))
 
-    # # create a dictionary of scene categories and their probabilities
-    # scene_categories = {classes[idx[i]]: probs[i] for i in range(len(idx))}
+    # create a dictionary of scene categories and their probabilities
+    scene_categories = {classes[idx[0,i]]: probs[0,i] for i in range(len(idx))}
 
 
 # ########### SCENE ATTRIBUTES ###########
