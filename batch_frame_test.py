@@ -177,6 +177,20 @@ interval = (video_length*5/100)*frame_delay
 # initialiser le compteur de frames
 count = 0
 
+# Définir la taille du batch
+batch_size = 4
+
+# Transformer les images
+tf = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])
+])
+
+# initialiser la liste des frames
+frames_list = []
+
 # boucle sur les frames
 while cap.isOpened():
     # lire le frame suivant
@@ -191,49 +205,31 @@ while cap.isOpened():
 
     # sauvegarder le frame s'il est inclus dans l'intervalle
     if count % interval == 0:
-        cv2.imwrite("img/img/frame_{}.jpg".format(count // interval), frame)
+        # ajouter la frame à la liste
+        frames_list.append(tf(frame))
 
-# libérer la vidéo
-cap.release()
+        # vérifier si la liste est de la taille du batch
+        if len(frames_list) == batch_size:
+            # créer un tenseur pour le batch
+            batch_tensor = torch.stack(frames_list)
 
+            # forward pass sur le batch d'images
+            logit = model.forward(batch_tensor)
+            h_x = F.softmax(logit, 1).data.squeeze()
+            probs, idx = h_x.sort(1, True)
+            probs = probs.numpy()
+            idx = idx.numpy()
 
-# BATCH
+            # affichage des résultats pour le batch en cours
+            print(f"Batch traité. Nombre d'images dans le batch : {batch_size}. Résultats : {idx}")
 
-folder_path = 'img'
-image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
-
-# Définir la taille du batch
-batch_size = 4
-
-# Créer un DataLoader pour charger les images en tant que batchs
-image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
-
-# forward pass sur chaque batch d'images
-for batch_idx, (data, target) in enumerate(image_loader):
-    # CHARGEMENT DE L'IMAGE
-    input_img = data
-    
-    # forward pass sur le batch d'images
-    # print(input_img.size())
-    logit = model.forward(input_img)
-    # print("efbesbqeb")
-    # print(logit.size())
-    h_x = F.softmax(logit, 1).data.squeeze()
-    probs, idx = h_x.sort(1, True)
-    probs = probs.numpy()
-    # print(probs[0])
-    # print(idx[0])
-
-    idx = idx.numpy()
-    
-    # affichage des résultats pour le batch en cours
-    print(f"Batch {batch_idx} traité. Nombre d'images dans le batch : {len(data)}. Résultats :")
-
+            # vider la liste des frames
+            frames_list = []
 
     # ########## OUTPUT ###########
 
 
-    print('RESULT ON BATCH ' , batch_idx)
+    print('RESULT ON BATCH ')
 
     # output the IO prediction
     io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
@@ -248,13 +244,13 @@ for batch_idx, (data, target) in enumerate(image_loader):
 
     # output the prediction of scene category
     print('\n--SCENE CATEGORIES:')
-    print(idx.shape)
-    print(probs[0])
-    for i in range (10):
-        print('{:.3f} -> {}'.format(probs[0,i], classes[idx[0,i]]))
+    for j in range(batch_size):
+        print('Numéro de la frame : ', )
+        for i in range (10):
+            print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
 
     # create a dictionary of scene categories and their probabilities
-    scene_categories = {classes[idx[0,i]]: probs[0,i] for i in range(len(idx))}
+    scene_categories = {classes[idx[j,i]]: probs[j,i] for j in range(batch_size) for i in range(len(idx))}
 
 
 # ########### SCENE ATTRIBUTES ###########
