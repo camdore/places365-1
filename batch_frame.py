@@ -181,10 +181,10 @@ count = 0
 batch_size = 4
 
 # Transformer les images
-tf = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+tf = trn.Compose([
+    trn.Resize((224, 224)),
+    trn.ToTensor(),
+    trn.Normalize(mean=[0.485, 0.456, 0.406],
                          std=[0.229, 0.224, 0.225])
 ])
 
@@ -226,6 +226,7 @@ while cap.isOpened():
             # vider la liste des frames
             frames_list = []
 
+
     # ########## OUTPUT ###########
 
 
@@ -242,7 +243,7 @@ while cap.isOpened():
     # ########### SCENE CATEGORIES ###########
 
 
-    # output the prediction of scene category
+# output the prediction of scene category
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
         print('Numéro de la frame : ', )
