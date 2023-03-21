@@ -157,15 +157,16 @@ batch_size = 4
 # Créer un DataLoader pour charger les images en tant que batchs
 image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
 
-# forward pass sur chaque batch d'images
+# Créer une liste vide pour stocker les dictionnaires des catégories de scènes
+scene_categories_list = []
+
+# Boucle sur chaque batch d'images
 for batch_idx, (data, target) in enumerate(image_loader):
     # CHARGEMENT DE L'IMAGE
     input_img = data
-    print("shape de l'input_img :", np.shape(input_img))
     
     # forward pass sur le batch d'images
     logit = model.forward(input_img)
-    print("logit :", logit)
     h_x = F.softmax(logit, 1).data.squeeze()
     probs, idx = h_x.sort(1, True)
     probs = probs.numpy()
@@ -173,9 +174,6 @@ for batch_idx, (data, target) in enumerate(image_loader):
     
     # affichage des résultats pour le batch en cours
     print(f"Batch {batch_idx} traité. Nombre d'images dans le batch : {len(data)}. Résultats :")
-    # for i in range(len(data)):
-        # print(f"Classe {idx[i]} avec probabilité {probs[i]}")
-        # print(np.sum(probs[i]))
 
     # ########## OUTPUT ###########
 
@@ -189,19 +187,28 @@ for batch_idx, (data, target) in enumerate(image_loader):
     else:
         print('\n--TYPE OF ENVIRONMENT: outdoor')
 
-
     # ########### SCENE CATEGORIES ###########
 
+    # Créer une liste vide pour stocker les dictionnaires des catégories de scènes pour le batch actuel
+    batch_scene_categories = []
 
-# output the prediction of scene category
+    # output the prediction of scene category
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
-        print('Numéro de la frame : ', )
+        print('Numéro de la frame : ', j)
         for i in range (10):
             print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
 
-    # create a dictionary of scene categories and their probabilities
-    scene_categories = {classes[idx[j,i]]: probs[j,i] for j in range(batch_size) for i in range(len(idx))}
+            # Créer un dictionnaire pour chaque image dans le batch et l'ajouter à la liste de catégories de scènes du batch
+            scene_dict = {classes[idx[j,i]]: probs[j,i]}
+            batch_scene_categories.append(scene_dict)
+
+    # Ajouter la liste de catégories de scènes du batch à la liste principale de catégories de scènes
+    scene_categories_list += batch_scene_categories
+
+# Afficher la liste de catégories de scènes complète
+print(scene_categories_list)
+print(len(scene_categories_list))
 
 
 # ########### SCENE ATTRIBUTES ###########
