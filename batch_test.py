@@ -167,7 +167,7 @@ for batch_idx, (data, target) in enumerate(image_loader):
     logit = model.forward(input_img)
     print("logit :", logit)
     h_x = F.softmax(logit, 1).data.squeeze()
-    probs, idx = h_x.sort(0, True)
+    probs, idx = h_x.sort(1, True)
     probs = probs.numpy()
     idx = idx.numpy()
     
@@ -177,46 +177,31 @@ for batch_idx, (data, target) in enumerate(image_loader):
         # print(f"Classe {idx[i]} avec probabilité {probs[i]}")
         # print(np.sum(probs[i]))
 
+    # ########## OUTPUT ###########
 
 
-# CHARGEMENT DE L'IMAGE
-# img_url = 'http://places.csail.mit.edu/demo/6.jpg'
-# os.system('wget %s -q -O test.jpg' % img_url)
-# img = Image.open('test.jpg')
-# input_img = V(tf(img).unsqueeze(0))
-# print("taille de l'input_img :", type(input_img))
+    print('RESULT ON BATCH ')
 
-# forward pass
-# logit = model.forward(input_img)
-# h_x = F.softmax(logit, 1).data.squeeze()
-# probs, idx = h_x.sort(0, True)
-# probs = probs.numpy()
-# idx = idx.numpy()
+    # output the IO prediction
+    io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+    if io_image < 0.5:
+        print('\n --TYPE OF ENVIRONMENT: indoor')
+    else:
+        print('\n--TYPE OF ENVIRONMENT: outdoor')
 
 
-########### OUTPUT ###########
+    # ########### SCENE CATEGORIES ###########
 
 
-# print('RESULT ON ' + img_url)
+# output the prediction of scene category
+    print('\n--SCENE CATEGORIES:')
+    for j in range(batch_size):
+        print('Numéro de la frame : ', )
+        for i in range (10):
+            print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
 
-# # output the IO prediction
-# io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
-# if io_image < 0.5:
-#     print('\n --TYPE OF ENVIRONMENT: indoor')
-# else:
-#     print('\n--TYPE OF ENVIRONMENT: outdoor')
-
-
-# ########### SCENE CATEGORIES ###########
-
-
-# # output the prediction of scene category
-# print('\n--SCENE CATEGORIES:')
-# for i in range (10):
-#     print('{:.3f} -> {}'.format(probs[i], classes[idx[i]]))
-
-# # create a dictionary of scene categories and their probabilities
-# scene_categories = {classes[idx[i]]: probs[i] for i in range(len(idx))}
+    # create a dictionary of scene categories and their probabilities
+    scene_categories = {classes[idx[j,i]]: probs[j,i] for j in range(batch_size) for i in range(len(idx))}
 
 
 # ########### SCENE ATTRIBUTES ###########
