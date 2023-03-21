@@ -157,6 +157,7 @@ batch_size = 4
 # Créer un DataLoader pour charger les images en tant que batchs
 image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
 
+list_scene_categories = []
 # forward pass sur chaque batch d'images
 for batch_idx, (data, target) in enumerate(image_loader):
     # CHARGEMENT DE L'IMAGE
@@ -165,14 +166,14 @@ for batch_idx, (data, target) in enumerate(image_loader):
     
     # forward pass sur le batch d'images
     logit = model.forward(input_img)
-    print("logit :", logit)
+    # print("logit :", logit)
     h_x = F.softmax(logit, 1).data.squeeze()
     probs, idx = h_x.sort(1, True)
     probs = probs.numpy()
     idx = idx.numpy()
     
     # affichage des résultats pour le batch en cours
-    print(f"Batch {batch_idx} traité. Nombre d'images dans le batch : {len(data)}. Résultats :")
+    print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(data)}.")
     # for i in range(len(data)):
         # print(f"Classe {idx[i]} avec probabilité {probs[i]}")
         # print(np.sum(probs[i]))
@@ -197,12 +198,16 @@ for batch_idx, (data, target) in enumerate(image_loader):
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
         print('Numéro de la frame : ', )
+        scene_categories_dict = {}
         for i in range (10):
             print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
-
+            scene_categories_dict[classes[idx[j,i]]] = probs[j,i]
+        # ajouter le dictionnaire pour cette image à la liste
+        list_scene_categories.append(scene_categories_dict)
     # create a dictionary of scene categories and their probabilities
-    scene_categories = {classes[idx[j,i]]: probs[j,i] for j in range(batch_size) for i in range(len(idx))}
 
+print(list_scene_categories)
+print(len(list_scene_categories))
 
 # ########### SCENE ATTRIBUTES ###########
 
