@@ -157,39 +157,25 @@ batch_size = 4
 # Créer un DataLoader pour charger les images en tant que batchs
 image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
 
-<<<<<<< HEAD
 list_scene_categories = []
 # forward pass sur chaque batch d'images
-=======
-# Créer une liste vide pour stocker les dictionnaires des catégories de scènes
-scene_categories_list = []
-
-# Boucle sur chaque batch d'images
->>>>>>> 5e0be0ddca23b700258f0d3b152b0b1c7a3e82c6
 for batch_idx, (data, target) in enumerate(image_loader):
     # CHARGEMENT DE L'IMAGE
     input_img = data
     
     # forward pass sur le batch d'images
     logit = model.forward(input_img)
-<<<<<<< HEAD
     # print("logit :", logit)
-=======
->>>>>>> 5e0be0ddca23b700258f0d3b152b0b1c7a3e82c6
     h_x = F.softmax(logit, 1).data.squeeze()
     probs, idx = h_x.sort(1, True)
     probs = probs.numpy()
     idx = idx.numpy()
     
     # affichage des résultats pour le batch en cours
-<<<<<<< HEAD
     print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(data)}.")
     # for i in range(len(data)):
         # print(f"Classe {idx[i]} avec probabilité {probs[i]}")
         # print(np.sum(probs[i]))
-=======
-    print(f"Batch {batch_idx} traité. Nombre d'images dans le batch : {len(data)}. Résultats :")
->>>>>>> 5e0be0ddca23b700258f0d3b152b0b1c7a3e82c6
 
     # ########## OUTPUT ###########
 
