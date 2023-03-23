@@ -12,6 +12,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from torchvision import datasets
+from torch.utils.data import Dataset
 
 
  # hacky way to deal with the Pytorch 1.0 update
@@ -146,7 +147,60 @@ params = list(model.parameters())
 weight_softmax = params[-2].data.numpy()
 weight_softmax[weight_softmax<0] = 0
 
-# BATCH
+################### DECOUPAGE VIDEO ###################
+
+# création du dossier et sous dossier img
+
+dossier= "img"
+sous_dossier= "img"
+
+chemin_sous_dossier= os.path.join(dossier, sous_dossier)
+if not os.path.exists(chemin_sous_dossier):
+    os.mkdir(dossier)
+    os.mkdir(chemin_sous_dossier)
+
+# nom de la vidéo
+video_file = "Kiri.mp4"
+
+# ouvrir la vidéo
+cap = cv2.VideoCapture(video_file)
+
+# récupérer le nombre total de frames
+total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+# récupérer le délai entre les frames
+frame_delay = int(cap.get(cv2.CAP_PROP_FPS))
+
+# longueur vidéo (en secondes)
+video_length= total_frames//frame_delay
+
+# déterminer l'intervalle entre les frames à découper
+interval = (video_length*5/100)*frame_delay
+print(interval)
+print(frame_delay)
+# initialiser le compteur de frames
+count = 0
+
+# boucle sur les frames
+while cap.isOpened():
+    # lire le frame suivant
+    ret, frame = cap.read()
+
+    # sortir de la boucle si on atteint la fin de la vidéo
+    if not ret:
+        break
+
+    # incrémenter le compteur de frames
+    count += 1
+
+    # sauvegarder le frame s'il est inclus dans l'intervalle
+    if count % interval == 0:
+        cv2.imwrite("img/img/frame_{}.jpg".format(count // interval), frame)
+
+# libérer la vidéo
+cap.release()
+
+########### CREATION DATALOADER AND BATCH ###########
 
 folder_path = 'img'
 image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
@@ -192,21 +246,21 @@ for batch_idx, (data, target) in enumerate(image_loader):
     # ########### SCENE CATEGORIES ###########
 
     # Créer une liste vide pour stocker les dictionnaires des catégories de scènes pour le batch actuel
-    batch_scene_categories = []
+    # batch_scene_categories = []
 
     # output the prediction of scene category
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
         print('Numéro de la frame : ', )
         scene_categories_dict = {}
-        for i in range (10):
+        for i in range(10):
             print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
             scene_categories_dict[classes[idx[j,i]]] = probs[j,i]
         # ajouter le dictionnaire pour cette image à la liste
         list_scene_categories.append(scene_categories_dict)
     # create a dictionary of scene categories and their probabilities
 
-print(list_scene_categories)
+# print(list_scene_categories)
 print(len(list_scene_categories))
 
 # ########### SCENE ATTRIBUTES ###########
