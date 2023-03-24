@@ -13,6 +13,7 @@ import cv2
 from PIL import Image
 from torchvision import datasets
 from torch.utils.data import Dataset
+import glob
 
 
  # hacky way to deal with the Pytorch 1.0 update
@@ -158,9 +159,14 @@ chemin_sous_dossier= os.path.join(dossier, sous_dossier)
 if not os.path.exists(chemin_sous_dossier):
     os.mkdir(dossier)
     os.mkdir(chemin_sous_dossier)
+else : 
+    image_files = glob.glob(os.path.join(chemin_sous_dossier, '*.jpg'))
+    # Use a loop to remove each file
+    for file in image_files:
+        os.remove(file)
 
 # nom de la vidéo
-video_file = "Kiri.mp4"
+video_file = "Inside Lenny Kravitz's Brazilian Farm Compound _ Open Door _ Architectural Digest-FlsKjWqu82k.mp4"
 
 # ouvrir la vidéo
 cap = cv2.VideoCapture(video_file)
@@ -174,10 +180,6 @@ frame_delay = int(cap.get(cv2.CAP_PROP_FPS))
 # longueur vidéo (en secondes)
 video_length= total_frames//frame_delay
 
-# déterminer l'intervalle entre les frames à découper
-interval = (video_length*5/100)*frame_delay
-print(interval)
-print(frame_delay)
 # initialiser le compteur de frames
 count = 0
 
@@ -194,8 +196,8 @@ while cap.isOpened():
     count += 1
 
     # sauvegarder le frame s'il est inclus dans l'intervalle
-    if count % interval == 0:
-        cv2.imwrite("img/img/frame_{}.jpg".format(count // interval), frame)
+    if count % frame_delay == 0:
+        cv2.imwrite("img/img/frame_{}.jpg".format(count // frame_delay), frame)
 
 # libérer la vidéo
 cap.release()
@@ -206,6 +208,14 @@ folder_path = 'img'
 image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
 
 # Définir la taille du batch
+# def find_batch_size(video_length):
+#     if video_length%2 : #pair
+#         if video_length
+
+#     else : #impair
+
+#     return batch_size
+
 batch_size = 4
 
 # Créer un DataLoader pour charger les images en tant que batchs
