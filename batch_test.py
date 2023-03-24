@@ -14,6 +14,7 @@ from PIL import Image
 from torchvision import datasets
 from torch.utils.data import Dataset
 import glob
+import time
 
 
  # hacky way to deal with the Pytorch 1.0 update
@@ -166,7 +167,7 @@ else :
         os.remove(file)
 
 # nom de la vidéo
-video_file = "Inside Lenny Kravitz's Brazilian Farm Compound _ Open Door _ Architectural Digest-FlsKjWqu82k.mp4"
+video_file = "Kiri.mp4"
 
 # ouvrir la vidéo
 cap = cv2.VideoCapture(video_file)
@@ -208,15 +209,9 @@ folder_path = 'img'
 image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
 
 # Définir la taille du batch
-# def find_batch_size(video_length):
-#     if video_length%2 : #pair
-#         if video_length
 
-#     else : #impair
-
-#     return batch_size
-
-batch_size = 4
+start = time.time()
+batch_size = 64
 
 # Créer un DataLoader pour charger les images en tant que batchs
 image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
@@ -261,18 +256,23 @@ for batch_idx, (data, target) in enumerate(image_loader):
     # output the prediction of scene category
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
-        print('Numéro de la frame : ', )
-        scene_categories_dict = {}
-        for i in range(10):
-            print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
-            scene_categories_dict[classes[idx[j,i]]] = probs[j,i]
-        # ajouter le dictionnaire pour cette image à la liste
-        list_scene_categories.append(scene_categories_dict)
+        try :  
+            print('Numéro de la frame : ', )
+            scene_categories_dict = {}
+            for i in range(365):
+                print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
+                scene_categories_dict[classes[idx[j,i]]] = probs[j,i]
+            # ajouter le dictionnaire pour cette image à la liste
+            list_scene_categories.append(scene_categories_dict)
+        except IndexError:
+            break 
     # create a dictionary of scene categories and their probabilities
 
-# print(list_scene_categories)
+print(list_scene_categories)
 print(len(list_scene_categories))
 
+end = time.time()
+print("Temps d'exécution : {:.2f} secondes".format(end - start))
 # ########### SCENE ATTRIBUTES ###########
 
 
