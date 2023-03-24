@@ -15,6 +15,7 @@ from torchvision import datasets
 from torch.utils.data import Dataset
 import glob
 import time
+import datetime
 
 
  # hacky way to deal with the Pytorch 1.0 update
@@ -167,7 +168,7 @@ else :
         os.remove(file)
 
 # nom de la vidéo
-video_file = "Kiri.mp4"
+video_file = "Inside Lenny Kravitz's Brazilian Farm Compound _ Open Door _ Architectural Digest-FlsKjWqu82k.mp4"
 
 # ouvrir la vidéo
 cap = cv2.VideoCapture(video_file)
@@ -176,10 +177,13 @@ cap = cv2.VideoCapture(video_file)
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 # récupérer le délai entre les frames
-frame_delay = int(cap.get(cv2.CAP_PROP_FPS))
+fps = int(cap.get(cv2.CAP_PROP_FPS))
 
 # longueur vidéo (en secondes)
-video_length= total_frames//frame_delay
+video_length = total_frames//fps
+
+# on découpe toutes les 1/divisions secondes
+division = 1
 
 # initialiser le compteur de frames
 count = 0
@@ -197,9 +201,9 @@ while cap.isOpened():
     count += 1
 
     # sauvegarder le frame s'il est inclus dans l'intervalle
-    if count % frame_delay == 0:
-        cv2.imwrite("img/img/frame_{}.jpg".format(count // frame_delay), frame)
-
+    if count % fps // division == 0:
+        cv2.imwrite("img/img/frame_{}.jpg".format(count // fps), frame)
+        
 # libérer la vidéo
 cap.release()
 
@@ -212,7 +216,8 @@ image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
 
 start = time.time()
 batch_size = 64
-
+count_frame = 1
+timestamp = 1
 # Créer un DataLoader pour charger les images en tant que batchs
 image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
 
@@ -257,18 +262,21 @@ for batch_idx, (data, target) in enumerate(image_loader):
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
         try :  
-            print('Numéro de la frame : ', )
+            print('Numéro de la frame :', count_frame+j)
+            print('Timestamp :', str(datetime.timedelta(seconds=count_frame+j)))
             scene_categories_dict = {}
-            for i in range(365):
+            for i in range(10):
                 print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
                 scene_categories_dict[classes[idx[j,i]]] = probs[j,i]
             # ajouter le dictionnaire pour cette image à la liste
             list_scene_categories.append(scene_categories_dict)
         except IndexError:
             break 
+
+    count_frame+=batch_size
     # create a dictionary of scene categories and their probabilities
 
-print(list_scene_categories)
+# print(list_scene_categories)
 print(len(list_scene_categories))
 
 end = time.time()
