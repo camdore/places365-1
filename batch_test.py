@@ -16,6 +16,7 @@ from torch.utils.data import Dataset
 import glob
 import time
 import datetime
+import json 
 
 
  # hacky way to deal with the Pytorch 1.0 update
@@ -168,7 +169,7 @@ else :
         os.remove(file)
 
 # nom de la vidéo
-video_file = "Inside Lenny Kravitz's Brazilian Farm Compound _ Open Door _ Architectural Digest-FlsKjWqu82k.mp4"
+video_file = "LES TROIS MOUSQUETAIRES Bande Annonce 4K (2023)-8STFmQCv5hQ.mp4"
 
 # ouvrir la vidéo
 cap = cv2.VideoCapture(video_file)
@@ -177,7 +178,7 @@ cap = cv2.VideoCapture(video_file)
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 # récupérer le délai entre les frames
-fps = int(cap.get(cv2.CAP_PROP_FPS))
+fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
 
 # longueur vidéo (en secondes)
 video_length = total_frames//fps
@@ -201,7 +202,7 @@ while cap.isOpened():
     count += 1
 
     # sauvegarder le frame s'il est inclus dans l'intervalle
-    if count % fps // division == 0:
+    if count % (fps // division) == 0:
         cv2.imwrite("img/img/frame_{}.jpg".format(count // fps), frame)
         
 # libérer la vidéo
@@ -221,7 +222,9 @@ timestamp = 1
 # Créer un DataLoader pour charger les images en tant que batchs
 image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
 
-list_scene_categories = []
+list_1_video = []
+dict_1_video = {}
+dict_1_video["idVideo"] = video_file
 # forward pass sur chaque batch d'images
 for batch_idx, (data, target) in enumerate(image_loader):
     # CHARGEMENT DE L'IMAGE
@@ -262,25 +265,37 @@ for batch_idx, (data, target) in enumerate(image_loader):
     print('\n--SCENE CATEGORIES:')
     for j in range(batch_size):
         try :  
-            print('Numéro de la frame :', count_frame+j)
-            print('Timestamp :', str(datetime.timedelta(seconds=count_frame+j)))
             scene_categories_dict = {}
-            for i in range(10):
-                print('{:.3f} -> {}'.format(probs[j,i], classes[idx[j,i]]))
-                scene_categories_dict[classes[idx[j,i]]] = probs[j,i]
+            for i in range(365):
+                scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
             # ajouter le dictionnaire pour cette image à la liste
-            list_scene_categories.append(scene_categories_dict)
+            dict_1_frame = {}
+            dict_1_frame['frame']=(count_frame+j)
+            dict_1_frame['timestamps']=(str(datetime.timedelta(seconds=count_frame+j))) 
+            dict_1_frame["scene_attribute"]=scene_categories_dict 
+            list_1_video.append(dict_1_frame) 
         except IndexError:
             break 
-
+    
+    
+    dict_1_video['features']=(list_1_video)    
     count_frame+=batch_size
-    # create a dictionary of scene categories and their probabilities
-
-# print(list_scene_categories)
-print(len(list_scene_categories))
 
 end = time.time()
 print("Temps d'exécution : {:.2f} secondes".format(end - start))
+
+################ JSON FILE ######################
+
+# convert list_scene_categories to JSON string
+json_str = json.dumps(dict_1_video)
+
+# save the JSON string to file
+with open('dict_1_video.json', 'w') as f:
+    f.write(json_str)
+
+
+
+
 # ########### SCENE ATTRIBUTES ###########
 
 
