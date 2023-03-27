@@ -173,15 +173,15 @@ video_file = "LES TROIS MOUSQUETAIRES Bande Annonce 4K (2023)-8STFmQCv5hQ.mp4"
 
 # ouvrir la vidéo
 cap = cv2.VideoCapture(video_file)
-
+print(cap)
 # récupérer le nombre total de frames
 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
+print(total_frames)
 # récupérer le délai entre les frames
 fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
 
 # longueur vidéo (en secondes)
-video_length = total_frames//fps
+# video_length = total_frames//fps
 
 # on découpe toutes les 1/divisions secondes
 division = 1
@@ -240,11 +240,9 @@ for batch_idx, (data, target) in enumerate(image_loader):
     
     # affichage des résultats pour le batch en cours
     print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(data)}.")
-    # for i in range(len(data)):
-        # print(f"Classe {idx[i]} avec probabilité {probs[i]}")
-        # print(np.sum(probs[i]))
 
-    # ########## OUTPUT ###########
+
+    ########## OUTPUT ###########
 
 
     print('RESULT ON BATCH ')
@@ -256,10 +254,7 @@ for batch_idx, (data, target) in enumerate(image_loader):
     else:
         print('\n--TYPE OF ENVIRONMENT: outdoor')
 
-    # ########### SCENE CATEGORIES ###########
-
-    # Créer une liste vide pour stocker les dictionnaires des catégories de scènes pour le batch actuel
-    # batch_scene_categories = []
+    ########### SCENE CATEGORIES ###########
 
     # output the prediction of scene category
     print('\n--SCENE CATEGORIES:')
@@ -277,8 +272,8 @@ for batch_idx, (data, target) in enumerate(image_loader):
         except IndexError:
             break 
     
-    
-    dict_1_video['features']=(list_1_video)    
+    dict_1_video['features']=(list_1_video)
+
     count_frame+=batch_size
 
 end = time.time()
@@ -293,10 +288,7 @@ json_str = json.dumps(dict_1_video)
 with open('dict_1_video.json', 'w') as f:
     f.write(json_str)
 
-
-
-
-# ########### SCENE ATTRIBUTES ###########
+########### SCENE ATTRIBUTES ###########
 
 
 # # Variables permettant d'obtenir les probabilités des attributs
