@@ -12,12 +12,14 @@ import numpy as np
 import cv2
 from PIL import Image
 from torchvision import datasets
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, TensorDataset
 import glob
 import time
 import datetime
 import json 
+import multiprocessing
 
+start = time.time()
 
  # hacky way to deal with the Pytorch 1.0 update
 def recursion_change_bn(module):
@@ -151,185 +153,149 @@ params = list(model.parameters())
 weight_softmax = params[-2].data.numpy()
 weight_softmax[weight_softmax<0] = 0
 
-################### DECOUPAGE VIDEO ###################
+################### PLAYLIST VIDEOS ###################
 
-# création du dossier et sous dossier img
+video_dir = 'videos/'
 
-dossier= "img"
-sous_dossier= "img"
+# list all files in the directory
+all_files = os.listdir(video_dir)
 
-chemin_sous_dossier= os.path.join(dossier, sous_dossier)
-if not os.path.exists(chemin_sous_dossier):
-    os.mkdir(dossier)
-    os.mkdir(chemin_sous_dossier)
-else : 
-    image_files = glob.glob(os.path.join(chemin_sous_dossier, '*.jpg'))
-    # Use a loop to remove each file
-    for file in image_files:
-        os.remove(file)
+# filter by video files
+video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
 
-# nom de la vidéo
-video_file = "LES TROIS MOUSQUETAIRES Bande Annonce 4K (2023)-8STFmQCv5hQ.mp4"
+for video_file in video_files:
 
-# ouvrir la vidéo
-cap = cv2.VideoCapture(video_file)
-print(cap)
-# récupérer le nombre total de frames
-total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-print(total_frames)
-# récupérer le délai entre les frames
-fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
+    ################### DECOUPAGE VIDEO ###################
+    start2 = time.time()
+    # création du dossier et sous dossier img
 
-# longueur vidéo (en secondes)
-# video_length = total_frames//fps
+    dossier= "img"
+    sous_dossier= "img"
 
-# on découpe toutes les 1/divisions secondes
-division = 1
+    chemin_sous_dossier= os.path.join(dossier, sous_dossier)
+    if not os.path.exists(chemin_sous_dossier):
+        os.mkdir(dossier)
+        os.mkdir(chemin_sous_dossier)
+    else : 
+        image_files = glob.glob(os.path.join(chemin_sous_dossier, '*.jpg'))
+        # Use a loop to remove each file
+        for file in image_files:
+            os.remove(file)
 
-# initialiser le compteur de frames
-count = 0
+    # ouvrir la vidéo
+    cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
 
-# boucle sur les frames
-while cap.isOpened():
-    # lire le frame suivant
-    ret, frame = cap.read()
+    # récupérer le nombre total de frames
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    # sortir de la boucle si on atteint la fin de la vidéo
-    if not ret:
-        break
+    # récupérer le délai entre les frames
+    fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
 
-    # incrémenter le compteur de frames
-    count += 1
+    # on découpe toutes les 1/divisions secondes
+    division = 1
 
-    # sauvegarder le frame s'il est inclus dans l'intervalle
-    if count % (fps // division) == 0:
-        cv2.imwrite("img/img/frame_{}.jpg".format(count // fps), frame)
+    # initialiser le compteur de frames
+    count = 0
+    list_frames = []
+    # boucle sur les frames
+    while cap.isOpened():
+        # lire le frame suivant
+        ret, frame = cap.read()
+
+        # sortir de la boucle si on atteint la fin de la vidéo
+        if not ret:
+            break
+
+        # incrémenter le compteur de frames
+        count += 1
+
+        # sauvegarder le frame s'il est inclus dans l'intervalle
+        if count % (fps // division) == 0:
+            cv2.imwrite("img/img/frame_{}.jpg".format(count // fps), frame)
+            list_frames.append(frame)  
+
+    # libérer la vidéo
+    cap.release()
+    end2 = time.time()
+    print("Temps d'exécution img : {:.2f} secondes".format(end2 - start2))
+    ########### CREATION DATALOADER AND BATCH ###########
+
+    folder_path = 'img'
+    image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
+
+    # Définir la taille du batch
+
+    batch_size = 128
+    count_frame = 1
+    timestamp = 1
+
+    # Créer un DataLoader pour charger les images en tant que batchs
+    image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size, num_workers = 1)
+
+    list_1_video = []
+    dict_1_video = {}
+    dict_1_video["idVideo"] = video_file
+    # forward pass sur chaque batch d'images
+    start3 = time.time()
+    for batch_idx, (data, target) in enumerate(image_loader):
+        # CHARGEMENT DE L'IMAGE
+        input_img = data
+        print(np.shape(input_img))
+        print(type(input_img))
+        # forward pass sur le batch d'images
+        logit = model.forward(input_img)
+        h_x = F.softmax(logit, 1).data.squeeze()
+        probs, idx = h_x.sort(1, True)
+        probs = probs.numpy()
+        idx = idx.numpy()
         
-# libérer la vidéo
-cap.release()
-
-########### CREATION DATALOADER AND BATCH ###########
-
-folder_path = 'img'
-image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
-
-# Définir la taille du batch
-
-start = time.time()
-batch_size = 64
-count_frame = 1
-timestamp = 1
-# Créer un DataLoader pour charger les images en tant que batchs
-image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
-
-list_1_video = []
-dict_1_video = {}
-dict_1_video["idVideo"] = video_file
-# forward pass sur chaque batch d'images
-for batch_idx, (data, target) in enumerate(image_loader):
-    # CHARGEMENT DE L'IMAGE
-    input_img = data
-    
-    # forward pass sur le batch d'images
-    logit = model.forward(input_img)
-    # print("logit :", logit)
-    h_x = F.softmax(logit, 1).data.squeeze()
-    probs, idx = h_x.sort(1, True)
-    probs = probs.numpy()
-    idx = idx.numpy()
-    
-    # affichage des résultats pour le batch en cours
-    print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(data)}.")
+        # affichage des résultats pour le batch en cours
+        # print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(data)}.")
 
 
-    ########## OUTPUT ###########
+        ########## OUTPUT ###########
 
 
-    print('RESULT ON BATCH ')
+        # print('RESULT ON BATCH ')
 
-    # output the IO prediction
-    io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
-    if io_image < 0.5:
-        print('\n --TYPE OF ENVIRONMENT: indoor')
-    else:
-        print('\n--TYPE OF ENVIRONMENT: outdoor')
+        # output the IO prediction
+        # io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+        # if io_image < 0.5:
+        #     print('\n --TYPE OF ENVIRONMENT: indoor')
+        # else:
+        #     print('\n--TYPE OF ENVIRONMENT: outdoor')
 
-    ########### SCENE CATEGORIES ###########
+        ########### SCENE CATEGORIES ###########
 
-    # output the prediction of scene category
-    print('\n--SCENE CATEGORIES:')
-    for j in range(batch_size):
-        try :  
-            scene_categories_dict = {}
-            for i in range(365):
-                scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
-            # ajouter le dictionnaire pour cette image à la liste
-            dict_1_frame = {}
-            dict_1_frame['frame']=(count_frame+j)
-            dict_1_frame['timestamps']=(str(datetime.timedelta(seconds=count_frame+j))) 
-            dict_1_frame["scene_attribute"]=scene_categories_dict 
-            list_1_video.append(dict_1_frame) 
-        except IndexError:
-            break 
-    
-    dict_1_video['features']=(list_1_video)
+        # output the prediction of scene category
+        # print('\n--SCENE CATEGORIES:')
+        for j in range(batch_size):
+            try :  
+                scene_categories_dict = {}
+                for i in range(365):
+                    scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
+                # ajouter le dictionnaire pour cette image à la liste
+                dict_1_frame = {}
+                dict_1_frame['frame'] = (count_frame+j)
+                dict_1_frame['timestamps'] = (str(datetime.timedelta(seconds=count_frame+j))) 
+                dict_1_frame["scene_attribute"] = scene_categories_dict 
+                list_1_video.append(dict_1_frame) 
+            except IndexError:
+                break 
+        
+        dict_1_video['features']=(list_1_video)
 
-    count_frame+=batch_size
+        count_frame+=batch_size
+    end3 = time.time()
+    print("Temps d'exécution_batch : {:.2f} secondes".format(end3 - start3))
+    ################ JSON FILE ######################
+
+    # convert list_scene_categories to JSON string
+    json_str = json.dumps(dict_1_video)
+
+    # save the JSON string to file
+    with open(f'dict_{video_file}.json', 'w') as f:
+        f.write(json_str)
 
 end = time.time()
 print("Temps d'exécution : {:.2f} secondes".format(end - start))
-
-################ JSON FILE ######################
-
-# convert list_scene_categories to JSON string
-json_str = json.dumps(dict_1_video)
-
-# save the JSON string to file
-with open('dict_1_video.json', 'w') as f:
-    f.write(json_str)
-
-########### SCENE ATTRIBUTES ###########
-
-
-# # Variables permettant d'obtenir les probabilités des attributs
-# responses_attribute = W_attribute.dot(features_blobs[1])
-# responses_attribute = torch.from_numpy(responses_attribute)
-# responses_attribute = F.softmax(responses_attribute,0)
-# responses_attribute = responses_attribute.numpy()
-# idx_a = np.argsort(responses_attribute)
-
-# print('\n--SCENE ATTRIBUTES:')
-
-# print(', '.join([f'{labels_attribute[idx_a[i]]}: {np.sort(responses_attribute)[i]}' for i in range(-1,-10,-1)]))
-
-
-# # create a dictionary of scene attributes and their probabilities
-# scene_attributes = {labels_attribute[idx_a[i]]: np.sort(responses_attribute)[i] for i in range(-1, -len(idx_a), -1)}
-
-
-########### HEATMAP ###########
-
-
-# # generate class activation mapping categories
-# print('\nClass activation map is saved as cam.jpg')
-# CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
-# print(len(idx))
-
-# # render the CAM and output
-# img = cv2.imread('test.jpg')
-# height, width, _ = img.shape
-# heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-# result = heatmap * 0.4 + img * 0.5
-# cv2.imwrite('cam.jpg', result)
-
-# # generate class activation mapping attributes
-# print('\nClass activation map is saved as cam2.jpg')
-# # VERIFIER features blobs
-# CAMs = returnCAM(features_blobs[0], weight_softmax, [idx_a[0]])
-
-# # render the CAM and output
-# img = cv2.imread('test.jpg')
-# height, width, _ = img.shape
-# heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-# result = heatmap * 0.4 + img * 0.5
-# cv2.imwrite('cam2.jpg', result)

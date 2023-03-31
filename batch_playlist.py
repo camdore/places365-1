@@ -12,12 +12,13 @@ import numpy as np
 import cv2
 from PIL import Image
 from torchvision import datasets
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, TensorDataset 
 import glob
 import time
 import datetime
 import json 
 import multiprocessing
+
 
 start = time.time()
 
@@ -99,6 +100,7 @@ def returnTF():
 
 # load the image transformer
     tf = trn.Compose([
+        trn.ToPILImage(),
         trn.Resize((224,224)),
         trn.ToTensor(),
         trn.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -126,13 +128,12 @@ def load_model():
     model.avgpool = torch.nn.AvgPool2d(kernel_size=14, stride=1, padding=0)
     
     model.eval()
-
-    model.eval()
     # hook the feature extractor
     features_names = ['layer4','avgpool'] # this is the last conv layer of the resnet
     for name in features_names:
         model._modules.get(name).register_forward_hook(hook_feature)
-    return model
+
+    return model.cuda()
 
 
 ########### CHARGEMENT DE PARAMETRES ###########
@@ -150,197 +151,143 @@ tf = returnTF() # image transformer
 
 # get the softmax weight
 params = list(model.parameters())
-weight_softmax = params[-2].data.numpy()
+weight_softmax = params[-2].data.cpu().numpy()
 weight_softmax[weight_softmax<0] = 0
 
 ################### PLAYLIST VIDEOS ###################
+@profile
+def main():
+    video_dir = 'videos/'
 
-video_dir = 'videos/'
+    # list all files in the directory
+    all_files = os.listdir(video_dir)
 
-# list all files in the directory
-all_files = os.listdir(video_dir)
-
-# filter by video files
-video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
-
-for video_file in video_files:
-
-    ################### DECOUPAGE VIDEO ###################
-
-    # création du dossier et sous dossier img
-
-    dossier= "img"
-    sous_dossier= "img"
-
-    chemin_sous_dossier= os.path.join(dossier, sous_dossier)
-    if not os.path.exists(chemin_sous_dossier):
-        os.mkdir(dossier)
-        os.mkdir(chemin_sous_dossier)
-    else : 
-        image_files = glob.glob(os.path.join(chemin_sous_dossier, '*.jpg'))
-        # Use a loop to remove each file
-        for file in image_files:
-            os.remove(file)
-
-    # ouvrir la vidéo
-    cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
-
-    # récupérer le nombre total de frames
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    # récupérer le délai entre les frames
-    fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
-
-    # on découpe toutes les 1/divisions secondes
-    division = 1
-
-    # initialiser le compteur de frames
-    count = 0
-
-    # boucle sur les frames
-    while cap.isOpened():
-        # lire le frame suivant
-        ret, frame = cap.read()
-
-        # sortir de la boucle si on atteint la fin de la vidéo
-        if not ret:
-            break
-
-        # incrémenter le compteur de frames
-        count += 1
-
-        # sauvegarder le frame s'il est inclus dans l'intervalle
-        if count % (fps // division) == 0:
-            cv2.imwrite("img/img/frame_{}.jpg".format(count // fps), frame)  
-
-    # libérer la vidéo
-    cap.release()
-
-    ########### CREATION DATALOADER AND BATCH ###########
-
-    folder_path = 'img'
-    image_dataset = datasets.ImageFolder(root=folder_path, transform=tf)
-
-    # Définir la taille du batch
-
-    batch_size = 64
-    count_frame = 1
-    timestamp = 1
-
-    if __name__ == '__main__':
-        multiprocessing.freeze_support()
-
-    # Créer un DataLoader pour charger les images en tant que batchs
-    image_loader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size,num_workers=2)
-
-    list_1_video = []
-    dict_1_video = {}
-    dict_1_video["idVideo"] = video_file
-    # forward pass sur chaque batch d'images
-    for batch_idx, (data, target) in enumerate(image_loader):
-        # CHARGEMENT DE L'IMAGE
-        input_img = data
-        
-        # forward pass sur le batch d'images
-        logit = model.forward(input_img)
-        h_x = F.softmax(logit, 1).data.squeeze()
-        probs, idx = h_x.sort(1, True)
-        probs = probs.numpy()
-        idx = idx.numpy()
-        
-        # affichage des résultats pour le batch en cours
-        print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(data)}.")
+    # filter by video files
+    video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
 
 
-        ########## OUTPUT ###########
+    for video_file in video_files:
 
+        ################### DECOUPAGE VIDEO ###################
 
-        print('RESULT ON BATCH ')
+        # ouvrir la vidéo
+        cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
 
-        # output the IO prediction
-        io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
-        if io_image < 0.5:
-            print('\n --TYPE OF ENVIRONMENT: indoor')
-        else:
-            print('\n--TYPE OF ENVIRONMENT: outdoor')
+        # récupérer le nombre total de frames
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        ########### SCENE CATEGORIES ###########
+        # récupérer le délai entre les frames
+        fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
 
-        # output the prediction of scene category
-        print('\n--SCENE CATEGORIES:')
-        for j in range(batch_size):
-            try :  
-                scene_categories_dict = {}
-                for i in range(365):
-                    scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
-                # ajouter le dictionnaire pour cette image à la liste
-                dict_1_frame = {}
-                dict_1_frame['frame'] = (count_frame+j)
-                dict_1_frame['timestamps'] = (str(datetime.timedelta(seconds=count_frame+j))) 
-                dict_1_frame["scene_attribute"] = scene_categories_dict 
-                list_1_video.append(dict_1_frame) 
-            except IndexError:
-                break 
-        
-        dict_1_video['features']=(list_1_video)
+        # on découpe toutes les 1/divisions secondes
+        division = 1
 
-        count_frame+=batch_size
+        # initialiser le compteur de frames
+        count = 0
+        list_frames = []
+        # boucle sur les frames
+        while cap.isOpened():
+            # lire le frame suivant
+            ret, frame = cap.read()
 
+            # sortir de la boucle si on atteint la fin de la vidéo
+            if not ret:
+                break
 
+            # incrémenter le compteur de frames
+            count += 1
 
-    ################ JSON FILE ######################
+            # sauvegarder le frame s'il est inclus dans l'intervalle
+            if count % (fps // division) == 0:
+                # frame = np.transpose(frame, (2, 0, 1))
+                list_frames.append(frame)  
 
-    # convert list_scene_categories to JSON string
-    json_str = json.dumps(dict_1_video)
+        # libérer la vidéo
+        cap.release()
 
-    # save the JSON string to file
-    with open(f'dict_{video_file}.json', 'w') as f:
-        f.write(json_str)
+        ########### CREATION DATALOADER AND BATCH ###########
+        # assume `frames` is a list of numpy arrays representing video frames
+        # you can convert them to tensors like this:
+        frames = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in list_frames]
+        frames = torch.cat(frames,dim=0)
 
-end = time.time()
-print("Temps d'exécution : {:.2f} secondes".format(end - start))
-########### SCENE ATTRIBUTES ###########
+        # create an in-memory dataset from the tensors
+        dataset = TensorDataset(frames)
 
+        # Définir la taille du batch
 
-# # Variables permettant d'obtenir les probabilités des attributs
-# responses_attribute = W_attribute.dot(features_blobs[1])
-# responses_attribute = torch.from_numpy(responses_attribute)
-# responses_attribute = F.softmax(responses_attribute,0)
-# responses_attribute = responses_attribute.numpy()
-# idx_a = np.argsort(responses_attribute)
+        batch_size = 128
+        count_frame = 1
+        timestamp = 1
 
-# print('\n--SCENE ATTRIBUTES:')
+        # Créer un DataLoader pour charger les images en tant que batchs
+        image_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=4)
 
-# print(', '.join([f'{labels_attribute[idx_a[i]]}: {np.sort(responses_attribute)[i]}' for i in range(-1,-10,-1)]))
+        list_1_video = []
+        dict_1_video = {}
+        dict_1_video["idVideo"] = video_file
+        # forward pass sur chaque batch d'images
 
+        for batch_idx, data in enumerate(image_loader):
+            # CHARGEMENT DE L'IMAGE
+            input_img = data[0]
+            # car data est une liste de 1 seul élement tensor
+            print(np.shape(input_img))
+            
+            # forward pass sur le batch d'images
+            logit = model.forward(input_img.cuda())
+            h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+            probs, idx = h_x.sort(1, True)
+            probs = probs.numpy()
+            idx = idx.numpy()
+            
+            # affichage des résultats pour le batch en cours
+            print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(input_img)}.")
 
-# # create a dictionary of scene attributes and their probabilities
-# scene_attributes = {labels_attribute[idx_a[i]]: np.sort(responses_attribute)[i] for i in range(-1, -len(idx_a), -1)}
+            ########## OUTPUT ###########
 
+            print('RESULT ON BATCH ')
 
-########### HEATMAP ###########
+            # output the IO prediction
+            io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+            if io_image < 0.5:
+                print('\n --TYPE OF ENVIRONMENT: indoor')
+            else:
+                print('\n--TYPE OF ENVIRONMENT: outdoor')
 
+            ########### SCENE CATEGORIES ###########
 
-# # generate class activation mapping categories
-# print('\nClass activation map is saved as cam.jpg')
-# CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
-# print(len(idx))
+            # output the prediction of scene category
+            print('\n--SCENE CATEGORIES:')
+            for j in range(batch_size):
+                try :  
+                    scene_categories_dict = {}
+                    for i in range(365):
+                        scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
+                    # ajouter le dictionnaire pour cette image à la liste
+                    dict_1_frame = {}
+                    dict_1_frame['frame'] = (count_frame+j)
+                    dict_1_frame['timestamps'] = (str(datetime.timedelta(seconds=count_frame+j))) 
+                    dict_1_frame["scene_attribute"] = scene_categories_dict 
+                    list_1_video.append(dict_1_frame) 
+                except IndexError:
+                    break 
+            
+            dict_1_video['features']=(list_1_video)
 
-# # render the CAM and output
-# img = cv2.imread('test.jpg')
-# height, width, _ = img.shape
-# heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-# result = heatmap * 0.4 + img * 0.5
-# cv2.imwrite('cam.jpg', result)
+            count_frame+=batch_size
 
-# # generate class activation mapping attributes
-# print('\nClass activation map is saved as cam2.jpg')
-# # VERIFIER features blobs
-# CAMs = returnCAM(features_blobs[0], weight_softmax, [idx_a[0]])
+        ################ JSON FILE ######################
 
-# # render the CAM and output
-# img = cv2.imread('test.jpg')
-# height, width, _ = img.shape
-# heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
-# result = heatmap * 0.4 + img * 0.5
-# cv2.imwrite('cam2.jpg', result)
+        # convert list_scene_categories to JSON string
+        json_str = json.dumps(dict_1_video)
+
+        # save the JSON string to file
+        with open(f'dict_{video_file}.json', 'w') as f:
+            f.write(json_str)
+
+    end = time.time()
+    print("Temps d'exécution : {:.2f} secondes".format(end - start))
+
+if __name__ == "__main__":
+    main()
