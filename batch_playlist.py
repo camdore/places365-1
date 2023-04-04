@@ -133,7 +133,8 @@ def load_model():
     for name in features_names:
         model._modules.get(name).register_forward_hook(hook_feature)
 
-    return model.cuda()
+    # return model.cuda()
+    return model
 
 
 ########### CHARGEMENT DE PARAMETRES ###########
@@ -151,7 +152,8 @@ tf = returnTF() # image transformer
 
 # get the softmax weight
 params = list(model.parameters())
-weight_softmax = params[-2].data.cpu().numpy()
+# weight_softmax = params[-2].data.cpu().numpy()
+weight_softmax = params[-2].data.numpy()
 weight_softmax[weight_softmax<0] = 0
 
 ################### PLAYLIST VIDEOS ###################
@@ -235,8 +237,10 @@ def main():
             print(np.shape(input_img))
             
             # forward pass sur le batch d'images
-            logit = model.forward(input_img.cuda())
-            h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+            # logit = model.forward(input_img.cuda())
+            logit = model.forward(input_img)
+            # h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+            h_x = F.softmax(logit, 1).data.squeeze()
             probs, idx = h_x.sort(1, True)
             probs = probs.numpy()
             idx = idx.numpy()
