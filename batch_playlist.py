@@ -18,7 +18,8 @@ import time
 import datetime
 import json 
 import multiprocessing
-
+import threading
+import queue
 
 start = time.time()
 
@@ -133,8 +134,8 @@ def load_model():
     for name in features_names:
         model._modules.get(name).register_forward_hook(hook_feature)
 
-    # return model.cuda()
-    return model
+    return model.cuda()
+    # return model
 
 
 ########### CHARGEMENT DE PARAMETRES ###########
@@ -152,117 +153,144 @@ tf = returnTF() # image transformer
 
 # get the softmax weight
 params = list(model.parameters())
-# weight_softmax = params[-2].data.cpu().numpy()
-weight_softmax = params[-2].data.numpy()
+weight_softmax = params[-2].data.cpu().numpy()
+# weight_softmax = params[-2].data.numpy()
 weight_softmax[weight_softmax<0] = 0
+
+## fonctions Trang Anh
+
+
+class VideoReaderThread(threading.Thread):
+    def __init__(self, video_path, queue):
+        threading.Thread.__init__(self)
+        self.video = cv2.VideoCapture(video_path)
+        self.queue = queue
+    
+    def run(self):
+        count = 0
+        fps = round(float(self.video.get(cv2.CAP_PROP_FPS)))
+        division = 1 
+        while True:
+            ret, img0 = self.video.read()
+            if not ret:
+                break
+            # incrémenter le compteur de frames
+            
+            if count % (fps // division) == 0: 
+                self.queue.put(img0)
+
+            count += 1
+    def stop(self):
+        self.video.release()
+
+def batch_frames(video_path, batch_size): #, device, half, imgsz, stride
+    # video_queue_yolo = queue.Queue(maxsize=batch_size*2)
+    # video_reader_thread_yolo = VideoReaderThread(video_path, video_queue_yolo)
+    # video_reader_thread_yolo.start()
+
+    video_queue = queue.Queue(maxsize=batch_size*10)
+    video_reader_thread = VideoReaderThread(video_path, video_queue)
+    video_reader_thread.start()
+    time.sleep(1)
+    
+    # batch_yolo = []
+    batch = []
+    count_frame = 0
+    
+    while True:
+        # img0_yolo = video_queue.get()
+        img0 = video_queue.get()
+
+        #pr yolov7
+        # img0_yolo = letterbox(img0_yolo, imgsz, stride)[0]
+        # img0_yolo = img0_yolo[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+        # img0_yolo = np.ascontiguousarray(img0_yolo)
+        # img0_yolo = torch.from_numpy(img0_yolo).to(device)
+        # img0_yolo = img0_yolo.half() if half else img0_yolo.float()  # uint8 to fp16/32
+        # img0_yolo /= 255.0  # 0 - 255 to 0.0 - 1.0
+        # if img0_yolo.ndimension() == 3:
+        #     img0_yolo = img0_yolo.unsqueeze(0)
+      
+
+        # batch_yolo.append(img0_yolo)
+        batch.append(img0)
+        count_frame += 1
+        
+        if count_frame == batch_size or not video_reader_thread.is_alive() and video_queue.empty():
+            count_frame = 0
+            yield batch 
+            batch = []
+            # batch_places = []
+        
+        if not video_reader_thread.is_alive() and video_queue.empty() and video_queue.empty():
+            break
+    
+    video_reader_thread.stop()
+    # video_reader_thread_places.stop()
 
 ################### PLAYLIST VIDEOS ###################
 @profile
 def main():
     video_dir = 'videos/'
-
+    
     # list all files in the directory
     all_files = os.listdir(video_dir)
 
     # filter by video files
     video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
 
+    for video_file in video_files:      
 
-    for video_file in video_files:
-
-        ################### DECOUPAGE VIDEO ###################
-
-        # ouvrir la vidéo
-        cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
-
-        # récupérer le nombre total de frames
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        # récupérer le délai entre les frames
-        fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
-
-        # on découpe toutes les 1/divisions secondes
-        division = 1
-
-        # initialiser le compteur de frames
-        count = 0
-        list_frames = []
-        # boucle sur les frames
-        while cap.isOpened():
-            # lire le frame suivant
-            ret, frame = cap.read()
-
-            # sortir de la boucle si on atteint la fin de la vidéo
-            if not ret:
-                break
-
-            # incrémenter le compteur de frames
-            count += 1
-
-            # sauvegarder le frame s'il est inclus dans l'intervalle
-            if count % (fps // division) == 0:
-                # frame = np.transpose(frame, (2, 0, 1))
-                list_frames.append(frame)  
-
-        # libérer la vidéo
-        cap.release()
-
-        ########### CREATION DATALOADER AND BATCH ###########
-        # assume `frames` is a list of numpy arrays representing video frames
-        # you can convert them to tensors like this:
-        frames = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in list_frames]
-        frames = torch.cat(frames,dim=0)
-
-        # create an in-memory dataset from the tensors
-        dataset = TensorDataset(frames)
-
-        # Définir la taille du batch
+        # # Définir la taille du batch
 
         batch_size = 128
+        video_path = os.path.join(video_dir, video_file)
+        print(video_file)
         count_frame = 1
-        timestamp = 1
 
-        # Créer un DataLoader pour charger les images en tant que batchs
-        image_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=4)
-
+        batches = batch_frames(video_path, batch_size)
+        
         list_1_video = []
         dict_1_video = {}
         dict_1_video["idVideo"] = video_file
-        # forward pass sur chaque batch d'images
 
-        for batch_idx, data in enumerate(image_loader):
+        for batch in batches:
+            batch_idx = 0
             # CHARGEMENT DE L'IMAGE
-            input_img = data[0]
+
+            batch = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in batch]
+            # print(np.shape(batch))
+            batch = torch.cat(batch,dim=0)
+            print(np.shape(batch))
+            batch = batch.cuda()
             # car data est une liste de 1 seul élement tensor
-            print(np.shape(input_img))
+            
             
             # forward pass sur le batch d'images
-            # logit = model.forward(input_img.cuda())
-            logit = model.forward(input_img)
-            # h_x = F.softmax(logit.cpu(), 1).data.squeeze()
-            h_x = F.softmax(logit, 1).data.squeeze()
+            logit = model.forward(batch)
+            h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+            # h_x = F.softmax(logit, 1).data.squeeze()
             probs, idx = h_x.sort(1, True)
             probs = probs.numpy()
             idx = idx.numpy()
             
             # affichage des résultats pour le batch en cours
-            print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : {len(input_img)}.")
+            print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : .")
 
             ########## OUTPUT ###########
 
             print('RESULT ON BATCH ')
 
             # output the IO prediction
-            io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
-            if io_image < 0.5:
-                print('\n --TYPE OF ENVIRONMENT: indoor')
-            else:
-                print('\n--TYPE OF ENVIRONMENT: outdoor')
+            # io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+            # if io_image < 0.5:
+            #     print('\n --TYPE OF ENVIRONMENT: indoor')
+            # else:
+            #     print('\n--TYPE OF ENVIRONMENT: outdoor')
 
             ########### SCENE CATEGORIES ###########
-
+            batch_idx+=1
             # output the prediction of scene category
-            print('\n--SCENE CATEGORIES:')
             for j in range(batch_size):
                 try :  
                     scene_categories_dict = {}

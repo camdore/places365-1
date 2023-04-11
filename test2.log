@@ -1,0 +1,491 @@
+Kiri.mp4
+Kiri.mp4
+torch.Size([21, 3, 224, 224])
+BATCH 0 traité. Nombre d'images dans le batch : .
+RESULT ON BATCH 
+Inside Lenny Kravitz's Brazilian Farm Compound _ Open Door _ Architectural Digest-FlsKjWqu82k.mp4
+Inside Lenny Kravitz's Brazilian Farm Compound _ Open Door _ Architectural Digest-FlsKjWqu82k.mp4
+torch.Size([128, 3, 224, 224])
+BATCH 0 traité. Nombre d'images dans le batch : .
+RESULT ON BATCH 
+torch.Size([128, 3, 224, 224])
+BATCH 0 traité. Nombre d'images dans le batch : .
+RESULT ON BATCH 
+torch.Size([112, 3, 224, 224])
+BATCH 0 traité. Nombre d'images dans le batch : .
+RESULT ON BATCH 
+LES TROIS MOUSQUETAIRES Bande Annonce 4K (2023)-8STFmQCv5hQ.mp4
+LES TROIS MOUSQUETAIRES Bande Annonce 4K (2023)-8STFmQCv5hQ.mp4
+torch.Size([128, 3, 224, 224])
+BATCH 0 traité. Nombre d'images dans le batch : .
+RESULT ON BATCH 
+torch.Size([30, 3, 224, 224])
+BATCH 0 traité. Nombre d'images dans le batch : .
+RESULT ON BATCH 
+Temps d'exécution : 39.60 secondes
+Wrote profile results to batch_playlist.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 39.1401 s
+File: batch_playlist.py
+Function: main at line 232
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   232                                           @profile
+   233                                           def main():
+   234         1          0.7      0.7      0.0      video_dir = 'videos/'
+   235                                               
+   236                                               # list all files in the directory
+   237         1         33.4     33.4      0.0      all_files = os.listdir(video_dir)
+   238                                           
+   239                                               # filter by video files
+   240         1          3.6      3.6      0.0      video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
+   241                                               # print(video_files)
+   242                                           
+   243         3          3.9      1.3      0.0      for video_file in video_files:
+   244         3         16.0      5.3      0.0          print(video_file)
+   245                                                   # ################### DECOUPAGE VIDEO ###################
+   246                                           
+   247                                                   # # ouvrir la vidéo
+   248                                                   # cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
+   249                                           
+   250                                                   # # récupérer le nombre total de frames
+   251                                                   # total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+   252                                           
+   253                                                   # # récupérer le délai entre les frames
+   254                                                   # fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
+   255                                           
+   256                                                   # # on découpe toutes les 1/divisions secondes
+   257                                                   # division = 1
+   258                                           
+   259                                                   # # initialiser le compteur de frames
+   260                                                   # count = 0
+   261                                                   # list_frames = []
+   262                                                   # # boucle sur les frames
+   263                                                   # while cap.isOpened():
+   264                                                   #     # lire le frame suivant
+   265                                                   #     ret, frame = cap.read()
+   266                                           
+   267                                                   #     # sortir de la boucle si on atteint la fin de la vidéo
+   268                                                   #     if not ret:
+   269                                                   #         break
+   270                                           
+   271                                                   #     # incrémenter le compteur de frames
+   272                                                   #     count += 1
+   273                                           
+   274                                                   #     # sauvegarder le frame s'il est inclus dans l'intervalle
+   275                                                   #     if count % (fps // division) == 0:
+   276                                                   #         # frame = np.transpose(frame, (2, 0, 1))
+   277                                                   #         list_frames.append(frame)  
+   278                                           
+   279                                                   # # libérer la vidéo
+   280                                                   # cap.release()
+   281                                           
+   282                                                   # ########### CREATION DATALOADER AND BATCH ###########
+   283                                                   # # assume `frames` is a list of numpy arrays representing video frames
+   284                                                   # # you can convert them to tensors like this:
+   285                                                   # frames = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in list_frames]
+   286                                                   # frames = torch.cat(frames,dim=0)
+   287                                           
+   288                                                   # # create an in-memory dataset from the tensors
+   289                                                   # dataset = TensorDataset(frames)
+   290                                           
+   291                                                   # # Définir la taille du batch
+   292                                           
+   293         3          1.1      0.4      0.0          batch_size = 128
+   294         3         90.1     30.0      0.0          video_path = os.path.join(video_dir, video_file)
+   295         3          2.9      1.0      0.0          print(video_file)
+   296         3          1.2      0.4      0.0          count_frame = 1
+   297                                                   # # Créer un DataLoader pour charger les images en tant que batchs
+   298                                                   # image_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=4)
+   299         3          4.9      1.6      0.0          batches = batch_frames(video_path, batch_size)
+   300                                                   
+   301         3          1.2      0.4      0.0          list_1_video = []
+   302         3       2117.7    705.9      0.0          dict_1_video = {}
+   303         3          2.7      0.9      0.0          dict_1_video["idVideo"] = video_file
+   304                                                   # forward pass sur chaque batch d'images
+   305                                                   # print("pas dans la boucle")
+   306                                                   # for batch_idx, data in enumerate(image_loader):
+   307         6    8465222.9 1410870.5     21.6          for batch in batches:
+   308         6          5.0      0.8      0.0              batch_idx = 0
+   309                                                       # print("jfzib")
+   310                                                       # CHARGEMENT DE L'IMAGE
+   311         6      11399.5   1899.9      0.0              input_img = batch #data[0]
+   312                                                       # print(np.shape(input_img))
+   313         6   12173398.1 2028899.7     31.1              batch = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in batch]
+   314                                                       # print(np.shape(batch))
+   315         6     244578.2  40763.0      0.6              batch = torch.cat(batch,dim=0)
+   316         6        300.9     50.2      0.0              print(np.shape(batch))
+   317                                                       # car data est une liste de 1 seul élement tensor
+   318                                                       
+   319                                                       
+   320                                                       # forward pass sur le batch d'images
+   321         6   17637078.7 2939513.1     45.1              logit = model.forward(batch)
+   322                                                       # h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+   323         6      50685.8   8447.6      0.1              h_x = F.softmax(logit, 1).data.squeeze()
+   324         6      75419.3  12569.9      0.2              probs, idx = h_x.sort(1, True)
+   325         6        137.1     22.9      0.0              probs = probs.numpy()
+   326         6         26.1      4.4      0.0              idx = idx.numpy()
+   327                                                       
+   328                                                       # affichage des résultats pour le batch en cours
+   329         6        107.5     17.9      0.0              print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : .")
+   330                                           
+   331                                                       ########## OUTPUT ###########
+   332                                           
+   333         6         13.8      2.3      0.0              print('RESULT ON BATCH ')
+   334                                           
+   335                                                       # output the IO prediction
+   336                                                       # io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+   337                                                       # if io_image < 0.5:
+   338                                                       #     print('\n --TYPE OF ENVIRONMENT: indoor')
+   339                                                       # else:
+   340                                                       #     print('\n--TYPE OF ENVIRONMENT: outdoor')
+   341                                           
+   342                                                       ########### SCENE CATEGORIES ###########
+   343         6          5.7      0.9      0.0              batch_idx+=1
+   344                                                       # output the prediction of scene category
+   345                                                       # print('\n--SCENE CATEGORIES:')
+   346       550        153.8      0.3      0.0              for j in range(batch_size):
+   347       550        108.2      0.2      0.0                  try :  
+   348       550        125.3      0.2      0.0                      scene_categories_dict = {}
+   349    199658      47203.5      0.2      0.1                      for i in range(365):
+   350    199655     152097.7      0.8      0.4                          scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
+   351                                                               # ajouter le dictionnaire pour cette image à la liste
+   352       547        206.4      0.4      0.0                      dict_1_frame = {}
+   353       547        209.0      0.4      0.0                      dict_1_frame['frame'] = (count_frame+j)
+   354       547       1479.2      2.7      0.0                      dict_1_frame['timestamps'] = (str(datetime.timedelta(seconds=count_frame+j))) 
+   355       547        144.5      0.3      0.0                      dict_1_frame["scene_attribute"] = scene_categories_dict 
+   356       547        274.1      0.5      0.0                      list_1_video.append(dict_1_frame) 
+   357         3          4.8      1.6      0.0                  except IndexError:
+   358         3          2.5      0.8      0.0                      break 
+   359                                                       
+   360         6          4.9      0.8      0.0              dict_1_video['features']=(list_1_video)
+   361                                           
+   362         6          3.7      0.6      0.0              count_frame+=batch_size
+   363                                           
+   364                                                   ################ JSON FILE ######################
+   365                                           
+   366                                                   # convert list_scene_categories to JSON string
+   367         3     251744.4  83914.8      0.6          json_str = json.dumps(dict_1_video)
+   368                                           
+   369                                                   # save the JSON string to file
+   370         3       1748.4    582.8      0.0          with open(f'dict_{video_file}.json', 'w') as f:
+   371         3      23929.6   7976.5      0.1              f.write(json_str)
+   372                                           
+   373         1          7.6      7.6      0.0      end = time.time()
+   374         1         12.2     12.2      0.0      print("Temps d'exécution : {:.2f} secondes".format(end - start))
+
+Kiri.mp4
+Kiri.mp4
+torch.Size([21, 3, 224, 224])
+Wrote profile results to batch_playlist.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 1.62549 s
+File: batch_playlist.py
+Function: main at line 232
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   232                                           @profile
+   233                                           def main():
+   234         1          0.8      0.8      0.0      video_dir = 'videos/'
+   235                                               
+   236                                               # list all files in the directory
+   237         1         43.5     43.5      0.0      all_files = os.listdir(video_dir)
+   238                                           
+   239                                               # filter by video files
+   240         1          5.2      5.2      0.0      video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
+   241                                               # print(video_files)
+   242                                           
+   243         1          0.4      0.4      0.0      for video_file in video_files:
+   244         1         26.9     26.9      0.0          print(video_file)
+   245                                                   # ################### DECOUPAGE VIDEO ###################
+   246                                           
+   247                                                   # # ouvrir la vidéo
+   248                                                   # cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
+   249                                           
+   250                                                   # # récupérer le nombre total de frames
+   251                                                   # total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+   252                                           
+   253                                                   # # récupérer le délai entre les frames
+   254                                                   # fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
+   255                                           
+   256                                                   # # on découpe toutes les 1/divisions secondes
+   257                                                   # division = 1
+   258                                           
+   259                                                   # # initialiser le compteur de frames
+   260                                                   # count = 0
+   261                                                   # list_frames = []
+   262                                                   # # boucle sur les frames
+   263                                                   # while cap.isOpened():
+   264                                                   #     # lire le frame suivant
+   265                                                   #     ret, frame = cap.read()
+   266                                           
+   267                                                   #     # sortir de la boucle si on atteint la fin de la vidéo
+   268                                                   #     if not ret:
+   269                                                   #         break
+   270                                           
+   271                                                   #     # incrémenter le compteur de frames
+   272                                                   #     count += 1
+   273                                           
+   274                                                   #     # sauvegarder le frame s'il est inclus dans l'intervalle
+   275                                                   #     if count % (fps // division) == 0:
+   276                                                   #         # frame = np.transpose(frame, (2, 0, 1))
+   277                                                   #         list_frames.append(frame)  
+   278                                           
+   279                                                   # # libérer la vidéo
+   280                                                   # cap.release()
+   281                                           
+   282                                                   # ########### CREATION DATALOADER AND BATCH ###########
+   283                                                   # # assume `frames` is a list of numpy arrays representing video frames
+   284                                                   # # you can convert them to tensors like this:
+   285                                                   # frames = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in list_frames]
+   286                                                   # frames = torch.cat(frames,dim=0)
+   287                                           
+   288                                                   # # create an in-memory dataset from the tensors
+   289                                                   # dataset = TensorDataset(frames)
+   290                                           
+   291                                                   # # Définir la taille du batch
+   292                                           
+   293         1          0.2      0.2      0.0          batch_size = 128
+   294         1        251.0    251.0      0.0          video_path = os.path.join(video_dir, video_file)
+   295         1          1.1      1.1      0.0          print(video_file)
+   296         1          0.2      0.2      0.0          count_frame = 1
+   297                                                   # # Créer un DataLoader pour charger les images en tant que batchs
+   298                                                   # image_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=4)
+   299         1          1.0      1.0      0.0          batches = batch_frames(video_path, batch_size)
+   300                                                   
+   301         1          0.4      0.4      0.0          list_1_video = []
+   302         1          0.3      0.3      0.0          dict_1_video = {}
+   303         1          0.5      0.5      0.0          dict_1_video["idVideo"] = video_file
+   304                                                   # forward pass sur chaque batch d'images
+   305                                                   # print("pas dans la boucle")
+   306                                                   # for batch_idx, data in enumerate(image_loader):
+   307         1    1033562.2 1033562.2     63.6          for batch in batches:
+   308         1          0.4      0.4      0.0              batch_idx = 0
+   309                                                       # print("jfzib")
+   310                                                       # CHARGEMENT DE L'IMAGE
+   311         1          0.2      0.2      0.0              input_img = batch #data[0]
+   312                                                       # print(np.shape(input_img))
+   313         1     542613.1 542613.1     33.4              batch = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in batch]
+   314                                                       # print(np.shape(batch))
+   315         1       2445.4   2445.4      0.2              batch = torch.cat(batch,dim=0)
+   316         1         28.0     28.0      0.0              print(np.shape(batch))
+   317                                                       # car data est une liste de 1 seul élement tensor
+   318                                                       
+   319                                                       
+   320                                                       # forward pass sur le batch d'images
+   321         1      46507.7  46507.7      2.9              logit = model.forward(batch)
+   322                                                       h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+   323                                                       # h_x = F.softmax(logit, 1).data.squeeze()
+   324                                                       probs, idx = h_x.sort(1, True)
+   325                                                       probs = probs.numpy()
+   326                                                       idx = idx.numpy()
+   327                                                       
+   328                                                       # affichage des résultats pour le batch en cours
+   329                                                       print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : .")
+   330                                           
+   331                                                       ########## OUTPUT ###########
+   332                                           
+   333                                                       print('RESULT ON BATCH ')
+   334                                           
+   335                                                       # output the IO prediction
+   336                                                       # io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+   337                                                       # if io_image < 0.5:
+   338                                                       #     print('\n --TYPE OF ENVIRONMENT: indoor')
+   339                                                       # else:
+   340                                                       #     print('\n--TYPE OF ENVIRONMENT: outdoor')
+   341                                           
+   342                                                       ########### SCENE CATEGORIES ###########
+   343                                                       batch_idx+=1
+   344                                                       # output the prediction of scene category
+   345                                                       # print('\n--SCENE CATEGORIES:')
+   346                                                       for j in range(batch_size):
+   347                                                           try :  
+   348                                                               scene_categories_dict = {}
+   349                                                               for i in range(365):
+   350                                                                   scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
+   351                                                               # ajouter le dictionnaire pour cette image à la liste
+   352                                                               dict_1_frame = {}
+   353                                                               dict_1_frame['frame'] = (count_frame+j)
+   354                                                               dict_1_frame['timestamps'] = (str(datetime.timedelta(seconds=count_frame+j))) 
+   355                                                               dict_1_frame["scene_attribute"] = scene_categories_dict 
+   356                                                               list_1_video.append(dict_1_frame) 
+   357                                                           except IndexError:
+   358                                                               break 
+   359                                                       
+   360                                                       dict_1_video['features']=(list_1_video)
+   361                                           
+   362                                                       count_frame+=batch_size
+   363                                           
+   364                                                   ################ JSON FILE ######################
+   365                                           
+   366                                                   # convert list_scene_categories to JSON string
+   367                                                   json_str = json.dumps(dict_1_video)
+   368                                           
+   369                                                   # save the JSON string to file
+   370                                                   with open(f'dict_{video_file}.json', 'w') as f:
+   371                                                       f.write(json_str)
+   372                                           
+   373                                               end = time.time()
+   374                                               print("Temps d'exécution : {:.2f} secondes".format(end - start))
+
+Kiri.mp4
+Kiri.mp4
+torch.Size([21, 3, 224, 224])
+Wrote profile results to batch_playlist.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 6.99822 s
+File: batch_playlist.py
+Function: main at line 232
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+   232                                           @profile
+   233                                           def main():
+   234         1          0.8      0.8      0.0      video_dir = 'videos/'
+   235                                               
+   236                                               # list all files in the directory
+   237         1         39.0     39.0      0.0      all_files = os.listdir(video_dir)
+   238                                           
+   239                                               # filter by video files
+   240         1          4.7      4.7      0.0      video_files = [f for f in all_files if f.endswith(('.mp4', '.avi', '.mov'))]
+   241                                               # print(video_files)
+   242                                           
+   243         1          0.3      0.3      0.0      for video_file in video_files:
+   244         1         11.9     11.9      0.0          print(video_file)
+   245                                                   # ################### DECOUPAGE VIDEO ###################
+   246                                           
+   247                                                   # # ouvrir la vidéo
+   248                                                   # cap = cv2.VideoCapture(os.path.join(video_dir, video_file))
+   249                                           
+   250                                                   # # récupérer le nombre total de frames
+   251                                                   # total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+   252                                           
+   253                                                   # # récupérer le délai entre les frames
+   254                                                   # fps = round(float(cap.get(cv2.CAP_PROP_FPS)))
+   255                                           
+   256                                                   # # on découpe toutes les 1/divisions secondes
+   257                                                   # division = 1
+   258                                           
+   259                                                   # # initialiser le compteur de frames
+   260                                                   # count = 0
+   261                                                   # list_frames = []
+   262                                                   # # boucle sur les frames
+   263                                                   # while cap.isOpened():
+   264                                                   #     # lire le frame suivant
+   265                                                   #     ret, frame = cap.read()
+   266                                           
+   267                                                   #     # sortir de la boucle si on atteint la fin de la vidéo
+   268                                                   #     if not ret:
+   269                                                   #         break
+   270                                           
+   271                                                   #     # incrémenter le compteur de frames
+   272                                                   #     count += 1
+   273                                           
+   274                                                   #     # sauvegarder le frame s'il est inclus dans l'intervalle
+   275                                                   #     if count % (fps // division) == 0:
+   276                                                   #         # frame = np.transpose(frame, (2, 0, 1))
+   277                                                   #         list_frames.append(frame)  
+   278                                           
+   279                                                   # # libérer la vidéo
+   280                                                   # cap.release()
+   281                                           
+   282                                                   # ########### CREATION DATALOADER AND BATCH ###########
+   283                                                   # # assume `frames` is a list of numpy arrays representing video frames
+   284                                                   # # you can convert them to tensors like this:
+   285                                                   # frames = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in list_frames]
+   286                                                   # frames = torch.cat(frames,dim=0)
+   287                                           
+   288                                                   # # create an in-memory dataset from the tensors
+   289                                                   # dataset = TensorDataset(frames)
+   290                                           
+   291                                                   # # Définir la taille du batch
+   292                                           
+   293         1          0.2      0.2      0.0          batch_size = 128
+   294         1         27.8     27.8      0.0          video_path = os.path.join(video_dir, video_file)
+   295         1          0.9      0.9      0.0          print(video_file)
+   296         1          0.2      0.2      0.0          count_frame = 1
+   297                                                   # # Créer un DataLoader pour charger les images en tant que batchs
+   298                                                   # image_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, num_workers=4)
+   299         1          0.8      0.8      0.0          batches = batch_frames(video_path, batch_size)
+   300                                                   
+   301         1          0.3      0.3      0.0          list_1_video = []
+   302         1          0.2      0.2      0.0          dict_1_video = {}
+   303         1          0.5      0.5      0.0          dict_1_video["idVideo"] = video_file
+   304                                                   # forward pass sur chaque batch d'images
+   305                                                   # print("pas dans la boucle")
+   306                                                   # for batch_idx, data in enumerate(image_loader):
+   307         1    1030314.0 1030314.0     14.7          for batch in batches:
+   308         1          1.4      1.4      0.0              batch_idx = 0
+   309                                                       # print("jfzib")
+   310                                                       # CHARGEMENT DE L'IMAGE
+   311                                                       # input_img = batch # data[0]
+   312                                                       # print(np.shape(input_img))
+   313         1     477978.0 477978.0      6.8              batch = [returnTF()(torch.from_numpy(np.transpose(frame,(2, 0, 1)))).unsqueeze(0) for frame in batch]
+   314                                                       # print(np.shape(batch))
+   315         1      78581.7  78581.7      1.1              batch = torch.cat(batch,dim=0)
+   316         1         56.0     56.0      0.0              print(np.shape(batch))
+   317         1       2355.6   2355.6      0.0              batch = batch.cuda()
+   318                                                       # car data est une liste de 1 seul élement tensor
+   319                                                       
+   320                                                       
+   321                                                       # forward pass sur le batch d'images
+   322         1    5408842.9 5408842.9     77.3              logit = model.forward(batch)
+   323                                                       h_x = F.softmax(logit.cpu(), 1).data.squeeze()
+   324                                                       # h_x = F.softmax(logit, 1).data.squeeze()
+   325                                                       probs, idx = h_x.sort(1, True)
+   326                                                       probs = probs.numpy()
+   327                                                       idx = idx.numpy()
+   328                                                       
+   329                                                       # affichage des résultats pour le batch en cours
+   330                                                       print(f"BATCH {batch_idx} traité. Nombre d'images dans le batch : .")
+   331                                           
+   332                                                       ########## OUTPUT ###########
+   333                                           
+   334                                                       print('RESULT ON BATCH ')
+   335                                           
+   336                                                       # output the IO prediction
+   337                                                       # io_image = np.mean(labels_IO[idx[:10]]) # vote for the indoor or outdoor
+   338                                                       # if io_image < 0.5:
+   339                                                       #     print('\n --TYPE OF ENVIRONMENT: indoor')
+   340                                                       # else:
+   341                                                       #     print('\n--TYPE OF ENVIRONMENT: outdoor')
+   342                                           
+   343                                                       ########### SCENE CATEGORIES ###########
+   344                                                       batch_idx+=1
+   345                                                       # output the prediction of scene category
+   346                                                       # print('\n--SCENE CATEGORIES:')
+   347                                                       for j in range(batch_size):
+   348                                                           try :  
+   349                                                               scene_categories_dict = {}
+   350                                                               for i in range(365):
+   351                                                                   scene_categories_dict[classes[idx[j,i]]] = float(probs[j,i])
+   352                                                               # ajouter le dictionnaire pour cette image à la liste
+   353                                                               dict_1_frame = {}
+   354                                                               dict_1_frame['frame'] = (count_frame+j)
+   355                                                               dict_1_frame['timestamps'] = (str(datetime.timedelta(seconds=count_frame+j))) 
+   356                                                               dict_1_frame["scene_attribute"] = scene_categories_dict 
+   357                                                               list_1_video.append(dict_1_frame) 
+   358                                                           except IndexError:
+   359                                                               break 
+   360                                                       
+   361                                                       dict_1_video['features']=(list_1_video)
+   362                                           
+   363                                                       count_frame+=batch_size
+   364                                           
+   365                                                   ################ JSON FILE ######################
+   366                                           
+   367                                                   # convert list_scene_categories to JSON string
+   368                                                   json_str = json.dumps(dict_1_video)
+   369                                           
+   370                                                   # save the JSON string to file
+   371                                                   with open(f'dict_{video_file}.json', 'w') as f:
+   372                                                       f.write(json_str)
+   373                                           
+   374                                               end = time.time()
+   375                                               print("Temps d'exécution : {:.2f} secondes".format(end - start))
+
